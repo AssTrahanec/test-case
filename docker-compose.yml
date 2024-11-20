@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  test-case-db:
+    image: "postgres:16.4-alpine3.20"
+    container_name: test-case-db
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=qwerty
+      - SSLMode=disabled
+      - DATABASE_HOST=test-case-db
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  migrate:
+    image: migrate/migrate
+    container_name: migrate
+    command: >
+      -path=/migrations/ -database postgres://postgres:qwerty@test-case-db:5432/postgres?sslmode=disable up
+    depends_on:
+      - test-case-db
+    volumes:
+      - ./schema:/migrations
+    networks:
+      - app-network
+
+  backend:
+    build: .
+    container_name: test-case-backend
+    environment:
+      - DB_SERVER=test-case-db
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      - test-case-db
+networks:
+  app-network:
+    driver: bridge
